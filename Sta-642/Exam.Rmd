@@ -1,0 +1,83 @@
+---
+title: 'STA 642 Midterm exam'
+author: "Jae Hyun Lee, jl914"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+---
+
+
+```{r setup, message=F, warning=F, echo=F}
+library(tidyverse)
+ggplot2::theme_set(ggplot2::theme_bw())
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(knitr)
+library(tidyr)
+knitr::opts_chunk$set(fig.align = 'center')
+```
+
+## Q1.
+
+#### data loading 
+
+```{r data}
+#data loading 
+O2 <- read.table("o2plusdetrended.txt")
+ti <- O2[,1]
+x <- O2[,3]
+ndat <- length(x)
+ti <- -ti[ndat:1]; x <- x[ndat:1]
+plot_orig <- ggplot()+
+  geom_line(mapping = aes(x = -ti[ndat:1], y = x[ndat:1])) +
+  labs(x = "time", y = "x")
+plot_rev <- ggplot()+
+  geom_line(mapping = aes(x = ti, y = x)) +
+  labs(x = "reverse time", y = "x")
+grid.arrange(plot_orig, plot_rev, top = "Detrended O2 Ratio series") 
+```
+
+#### (a)
+
+Fit a TVAR(18) model to this forward-time oxygen isotope series.
+Look at the “plug-in” estimated decomposition of the time series and the corresponding “plug-in” estimates over time of the wavelengths of the 4 dominant quasi-periodic components in the series. Discuss and summarise what these visuals suggest.
+
+```{r}
+#priors arrange
+p <- 18
+del <- c(0.99, 0.975)
+m0 <- rep(0,p); m0[1] <- 1; n0 <- 5; s0 <- 0.02; C0 <- diag(p)/2
+
+#Fit model
+model <- tvar(x, p, del, m0, C0, s0, n0)
+decomp_model <- tvar_decomp(x, model$m)
+
+#plug in estimated decomposition
+decomp_plot(x, decomp_model$decomp, 4)
+
+#corresponding wavelength of 4 dominant quasi-periodic component
+wave4 <- gather(data.frame(t(decomp_model$waves[1:4,])),key = "component", value = "value")
+ggplot() +
+  geom_line(data = wave4, mapping = aes(x = rep(ti,4), y = value, color = component)) +
+  labs(title = "Component wavelength", x = "Time")
+```
+
+#### (b)
+
+Use TVAR forecasting code tvarforecast.m to generate a reasonable number (several 000s) of synthetic futures over the next 240,000years. (That is, the next k = 80 time points, since our data are at 3kyear intervals). In general terms, do you think this is a “good” model for the series? From visual displays of predictions via synthetic futures compared to the real data, what kinds of (mismatch?) features stand-out? Include relevant supporting figures.
+
+```{r forecast}
+mT <- model$m[,ndat]; CT <- model$C[,,ndat]; sT <- model$s[ndat]; nT <- model$n[ndat]
+p = 18
+K = 80
+I = 1000
+forecast <- tvarforecast(x = x, p = p, K = K, I = I, del = del, mT = mT, CT = CT, sT = sT, nT = nT)
+```
+
+
+```{r}
+ffbs <- tvarFFBS(x = x, p = p, del = del, m0 = m0, C0 = C0, s0 = s0, n0 = n0, nmc = 1000)
+thetasamp <- ffbs$thetasamp
+vsamp <- ffbs$vsamp
+```
+

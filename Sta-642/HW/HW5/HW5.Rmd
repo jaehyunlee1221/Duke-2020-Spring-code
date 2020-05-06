@@ -1,0 +1,142 @@
+---
+title: 'STA 642 Homework5'
+author: "Jae Hyun Lee, jl914"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+---
+
+# HW5 for STA-642
+
+## Exercise 3
+
+Let $\phi_0 = v_{t-1}^{-1}, \phi_1 = v_t^{-1}$.
+Then find bivariate $P(\phi_0, \phi_t \mid D_t)$ given follow:
+
+$P(\phi_0) \sim gamma(a,b), \phi_1 = \phi_0 \eta /\beta$ where $\eta \sim beta(\beta a, (1-\beta)a),\; \beta \in (0,1) \;and \;\phi_0 \perp \eta$
+
+#### (a)
+
+$$
+\begin{aligned}
+&E(\phi_1 \mid \phi_0) = E(\phi_0\eta / \beta \mid \phi_0) = E(\eta)\phi_0/\beta \\
+&mean \; of \;beta(a,b) = \frac{a}{a+b} \rightarrow E(\eta) = \frac{\beta a}{a} = \beta \\
+&\rightarrow E(\phi_1 \mid \phi_0) = \phi_0
+\end{aligned}
+$$
+
+#### (b)
+
+$$
+\begin{aligned}
+&E(\phi_0) = a/b \\
+&E(\phi_1) = E(E(\phi_1\mid \phi_0)) = E(\phi_0) = a/b
+\end{aligned}
+$$
+
+#### (c)
+
+$$
+\begin{aligned}
+P(\phi_0, \eta) &= P(\phi_0)P(\eta) \quad (by\; independence) \\
+&\propto \phi_0^{a-1} e^{-b\phi_0} \times \eta^{\beta a -1}(1-\eta)^{(1-\beta)a -1} \\
+P(\phi_0, \phi_1) &= P_{\phi_0,\eta}(\phi_0, \frac{\phi_1\beta}{\phi_0}) \times \begin{vmatrix} 1 & -\frac{\phi_1 \beta}{\phi_0^2} \\ 0 & \frac{\beta}{\phi_0} \end{vmatrix} \quad by \; change\; of \; variable \\
+&and \quad 0 < \eta = \frac{\phi_1\beta}{\phi_0} < 1 \rightarrow 0 <\phi_1<\frac{\phi_0}{\beta} \\
+\rightarrow P(\phi_0, \phi_1) &\propto \phi_0^{a-1}e^{-b\phi_0} \times (\frac{\phi_1\beta}{\phi_0})^{\beta a-1}(1-\frac{\phi_1\beta}{\phi_0})^{(1-\beta)a - 1} \times \frac{\beta}{\phi_0} \\
+&\propto \phi_0^{a-1}e^{-b\phi_0} \times (\phi_1\beta)^{\beta a -1}\phi_0^{-\beta a+1}\phi_0^{-(1-\beta)a +1}(\phi_0 - \phi_1 \beta)^{(1-\beta)a-1} \times \frac{\beta}{\phi_0} \\
+&\propto \phi_0^{a-1}e^{-b\phi_0}\phi_1^{\beta a-1}\phi_0^{a-2} \times \frac{1}{\phi_0}(\phi_0 - \phi_1\beta)^{(1-\beta)a -1} \\
+&\propto e^{-b\phi_0} \phi_1^{\beta a -1}(\phi_0 - \phi_1\beta)^{(1-\beta)a - 1}
+\end{aligned}
+$$
+
+#### (d)
+
+Let $\nu = \phi_0 - \phi_1\beta$ then
+
+$$
+\begin{aligned}
+P(\phi_1, \nu) &= P_{\phi_0,\phi_1}(\phi_1, \nu + \phi_1\beta)\begin{vmatrix}1 & - \beta \\ 0 & 1 \end{vmatrix} =  P_{\phi_0,\phi_1}(\phi_1, \nu + \phi_1\beta) \\
+P(\phi_1) &= \int P(\phi_1, \nu)d\nu \\
+&\propto \int e^{-b(\nu + \phi_1\beta)}\phi_1^{\beta a -1} \nu^{(1-\beta)a -1}d\nu \\
+&\propto \phi_1^{\beta a -1}e^{-\beta b \phi_1} \int \underbrace{\nu^{(1-\beta)a}e^{-b\nu}}_{kernel\; of \;gamma((1-\beta)a,b)}d\nu \\
+&\propto C \underbrace{\phi_1^{\beta a -1}e^{-\beta b \phi_1}}_{kernel \;of \;gamma(\beta a ,\beta b)}
+\end{aligned}
+$$
+
+#### (e)
+
+We have defined that $\nu = \phi_0 - \phi_1\beta$ at previous question $\rightarrow \phi_0 = \nu + \phi_1\beta$.
+At previous question, we could figure out that 
+
+$P(\phi_1,\nu) \propto \phi_1^{\beta a - 1}e^{-\beta b \phi_1} \nu^{(1-\beta)a -1}e^{-b\nu}$.
+
+This can be factorized regarding $\phi_1, \nu$ as 
+
+$\phi_1^{\beta a -1}e^{-\beta b \phi_1} \propto P(\phi_1)$ and $\nu^{(1-\beta)a-1}e^{-b\nu} \propto P(\nu)$ and this is kernel of $gamma((1-\beta)a,b)$.
+Thus we can conclude that $\phi_1 \perp \nu$.
+
+Moreover, at (d), we have confirmed that $\phi_1,\nu \propto P(\phi_1,\phi_0)$.
+This is $P(\phi_0 \mid \phi_1) = \frac{P(\phi_0,\phi_1)}{P(\phi_1)} \propto \frac{P(\phi_1,\nu)}{P(\phi_1)} = \frac{P(\phi_1)P(\nu)}{P(\phi_1)} = P(\nu) \rightarrow P(\phi_0 \mid \phi_1) \propto P(\nu)$.
+
+## Exercise 4
+
+For previous setting, we have checked that, in setting where
+
+$$
+\begin{aligned}
+&P(\phi_0) \sim gamma(a,b) \\
+&\phi_1 = \phi_0\eta/\beta \\
+&\eta \sim beta(\beta a, (1-\beta)a) \\
+&\beta \in (0,1) \\
+&\phi_1 \perp \eta \\
+\rightarrow &P(\phi_1) \sim gamma(\beta a, \beta b)
+\end{aligned}
+$$
+
+If we replace $\phi_0 = \phi_{t-1}, \phi_1 = \phi_t, \eta = \eta_t, a = n_{t-1}, b = d_{t-1}$ and 
+$P(\phi_0)\rightarrow P(\phi_{t-1}\mid D_{t-1}), P(\phi_1) \rightarrow P(\phi_t\mid D_{t-1})$ then we can easily check the evolution procedure that
+
+$\phi_{t-1} \mid D_{t-1} \sim gamma(n_{t-1}/2,d_{t-1}/2) \rightarrow \phi_t \mid D_{t-1} \sim gamma(\beta n_{t-1}/2, \beta d_{t-1}/2)$
+
+## Exercise 5
+
+#### (a)
+
+At previous question Q3 (e), we have shown this.
+
+#### (b)
+
+In this discount volatility evolution set up, we have check that $\phi_{t-1} = \beta\phi_t +\nu_{t-1}$ which indicates Markovian structure in volatility
+
+$\phi_{t-1} \leftarrow \phi_t \leftarrow \cdots \phi_T$ for all T $\ge$ t.
+
+#### (c)
+
+$$
+\begin{aligned}
+&\phi_t = \beta \phi_{t+1} +\nu^*_t \\
+simliarly, \quad &E(\phi_{T-1}\mid D_T) = E(\beta\phi_T \mid D_T) + E(\nu^*_{T-1} \mid D_T) \\
+\rightarrow &E(\phi_{T-2} \mid D_T) = \beta E(\phi_{T-1} \mid D_T) + E(\nu_{T-2} \mid D_T) \\
+&\vdots \\
+\rightarrow &E(\phi_t \mid D_t) = \beta E(\phi_{t+1}\mid D_T) + E(\nu^*_t\mid D_{t}) \\
+\end{aligned}
+$$
+
+it means that from $E(\phi_T \mid D_T)$, by updating estimate of $E(\phi_i \mid D_i)$ by above equation, we can estimate $E(\phi_t \mid D_T)$ for $1 \le t\le T$.
+
+#### (d)
+
+Similar with above procedure, we can estimate trajectory values of $\phi_T, \phi_{T-1}, \cdots \phi_1$.
+
+$$
+\begin{aligned}
+&1.\; Sample \; \phi_T \;from \;gamma(n_T/2,n_Ts_T/2)\\
+&2.\; Sample \; \nu_{T-1} \;from \;gamma((1-\beta)n_{T-1}/2, n_{T-1}s_{T-1}/2)\\
+&3.\; Calculate \; \phi_{T-1}  = \beta \phi_T + \nu_{T_1}\\
+&4.\; sample \; \nu_{T-2} \;from \;gamma((1-\beta)n_{T-2}/2,n_{T-2}s_{T-2}/2)\\
+&5.\; Calculate \; \phi_{T-1}  = \beta \phi_T + \nu_{T_1}\\ 
+&\vdots \\
+&\; \; Sample \; \nu_1 \;from \;gamma((1-\beta)n_1/2, n_1s_1/2) \\
+&\; \; Calculate \; \phi_1 = \beta \phi_2 + \nu_1
+\end{aligned}
+$$
+

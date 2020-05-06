@@ -1,0 +1,197 @@
+---
+title: 'STA 532 Homework9'
+author: "Jae Hyun Lee, jl914"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+---
+
+```{r setup, message=F, warning=F, echo=F}
+library(tidyverse)
+library(grid)
+library(gridExtra)
+library(knitr)
+require(magrittr)
+require(plyr)
+library(gtools)
+ggplot2::theme_set(ggplot2::theme_bw())
+knitr::opts_chunk$set(fig.align = 'center')
+```
+
+# HW9 for STA-532
+
+## 1.
+
+#### (a)
+
+Type I error = $P(Y \notin A(0) \mid \mu = 0)$ under $H: Y \sim N(0,1)$
+
+$$
+\begin{aligned}
+Pr(Y \notin A(0)\mid \mu = 0) &= Pr(Y<z_{\alpha(1-w)}) + Pr(Y>z_{1-\alpha w}) \\
+&= \Phi(z_{\alpha(1-w)}) + 1 - \Phi(z_{1-\alpha w}) \\
+&= \alpha(1-w) + 1- (1-\alpha w) = \alpha - \alpha w + 1 - 1+\alpha w = \alpha
+\end{aligned}
+$$
+
+#### (b)
+
+$Pw(\mu) = (Y \notin A_0 \mid \mu)$ and $Y-\mu \sim N(0,1)$
+
+$$
+\begin{aligned}
+(Y \notin A_0 \mid \mu) &= Pr(Y< z_{\alpha(1-w)}) + Pr(Y>z_{1-\alpha w}) \\
+&= Pr(Y-\mu< z_{\alpha(1-w)}-\mu) + Pr(Y-\mu>z_{1-\alpha w}-\mu) \\
+&= \Phi(z_{\alpha(1-w)}-\mu) + 1 - \Phi(z_{1-\alpha w}-\mu)
+\end{aligned}
+$$
+If w = 1/2 then $Pw(\mu) = \Phi(z_{\alpha/2}-\mu) + 1 - \Phi(z_{1-\alpha/2}-\mu)$.
+If w = 1/4 then $Pw(\mu) = \Phi(z_{3\alpha/4}-\mu) + 1 - \Phi(z_{1-\alpha/4}-\mu)$.
+
+```{r}
+a = 0.05
+w = c(.5,0.25)
+pow <- function(m,w){
+  return(pnorm(qnorm(a*(1-w))-m) + 1 - pnorm(qnorm(1-a*w)-m))
+}
+m = seq(-3,3,by = 0.2)
+ggplot() +
+  geom_line(mapping = aes(x = m,y = pow(m,.5)), color = "skyblue") +
+  geom_line(mapping = aes(x = m,y = pow(m,.25)), color = "orange") +
+  labs(title = "power of test accroding to test")
+```
+
+When we see above graph, we can find that w = 1/4 locates at right side of w = 1/2. That means that if $\mu<0$ power of test of w = 1/4 is larger than w = 1/2. Thus if we assume that $\mu$ locates below 0, we use w = 1/4, otherwise, w = 1/2.
+
+## 2.
+
+#### (a)
+
+$$
+\begin{aligned}
+F(y) = \int^y_0 P_\theta dx = \int^y_0 e^{-x/\theta}/\theta = 1-e^{-y/\theta}
+\end{aligned}
+$$
+#### (b)
+
+Test stat : Y
+Level-$\alpha$ test: $Pr(Y>b \mid H) \le \alpha$ $\rightarrow e^{-b/\theta} < e^{-b/\theta_0} = \alpha$ under H. Then $e^{-b/\theta} < \alpha$ always for all $\theta<\theta_0$.
+b = $-\theta_0 log(\alpha)$
+
+```{r}
+a = 0.05
+theta0 = 2
+theta = seq(0,3,.3)
+result <- exp(-theta0*log(a)/theta)
+ggplot()+
+  geom_line(mapping = aes(x = theta, y = result))
+```
+
+#### (c)
+
+$$
+\begin{aligned}
+Pr(\theta_0 \in C(Y)\mid H) &= Pr(y \in A(\theta_0)\mid H) \ge 1-\alpha \\
+Thus\; C(Y) &= \{\theta_0 : H: \theta<\theta_0 is accpeted by y\} \\
+&= \{\theta_0: y \in A(\theta_0)\} \\
+&= \{\theta_0: y < -\theta_0log(\alpha)\} \\
+&= \{\theta_0: \theta_0>-\frac{y}{log(\alpha)}\} \quad beacuase \;-\log(\alpha) \; is \;positive \\
+\rightarrow C(Y)&= (-\frac{y}{log(\alpha)},\infty) \rightarrow C(y) = -\frac{y}{log(\alpha)}
+\end{aligned}
+$$
+Then,
+
+$$
+\begin{aligned}
+Pr(-\frac{y}{log(\alpha)}<\theta_0 \mid H) = Pr(y < -\theta_0log(\alpha)\mid H) = Pr(Y<b \mid H)\ge 1-\alpha\; as \;shown\;Q2.(b) 
+\end{aligned}
+$$
+
+
+
+
+## 3.
+
+#### (a)
+
+H: $\mu_A = \mu_B \rightarrow$ H:$\mu_A - \mu_B = 0$
+Test stat: $\bar Y_A - \bar Y_B$ where $\bar Y_A \sim N(\mu_A, \sigma^2/4),\bar Y_B \sim N(\mu_B, \sigma^2/4)$.
+Then $\frac{\bar Y_A - \bar Y_B}{\sqrt{\sigma^2/4 + \sigma^2/4}} \sim N(0,1)$, but we don't know $\sigma^2$ but they have same $\sigma^2$.  
+Thus we replace $\sigma^2$ with  $s_p^2$ where $s_p^2 = (\sum (Y_{A,i} - \bar Y_A) + \sum (Y_{B,i} - \bar Y_B))/6$. Then 
+$\frac{\bar Y_A - \bar Y_B}{s_p/\sqrt(2)} \sim t_{6}$ which is null distribution.
+Let's call $\frac{\bar Y_A - \bar Y_B}{s_p/\sqrt(2)}$ as T and we know that T has contious $t_6$ distribution. If we define p-value function $Pv(T) = Pr(T \ge t \mid H)$, then as we have shown in the class, random $Pv(T)$ has a uniform distribution. Since Pv(T) follows uniform dist on [0,1], the minimum value of Pv(T) is 0. Thus 0 is the smallest p-value.
+
+
+#### (b)
+
+H: no treatment effect   
+means $N_A(\mu_A,\sigma^2) = N_B(\mu_B, \sigma^2)$.
+
+we have 4 observations for each, available randomization is $_{8}\mathrm{C}_{4} = N$. 
+By randomazation each permutation has same probability which means that if $(\bar Y_A - \bar Y_B)_{obs}$ is max or min of null dist, then p-value = 1/N.
+For each randomization, we can calculate test stat: $\bar Y_A - \bar Y_B$ and p-value = quantile of null dist that $\bar Y_A - \bar Y_B$ have on the null dist. If our observed assignment is minimum or maximum at null dist p-value = 1/N.
+
+
+#### (c)
+null dist under H for normal-theory test is $t_6$
+```{r}
+
+x = c("B","A","B","B","A","A","B","A")
+y = c(7.5, 1.2, 7.5, 8.7, 3.2, 5.1, 6.2, 1.7)
+data <- cbind.data.frame(x,y)
+#normal
+idx <- data$x == "A"
+Y_A <- mean(data[idx,2])
+Y_B <- mean(data[!idx,2])
+sp <- sum((data[idx,2] - Y_A)^2+(data[!idx,2] - Y_B)^2)/nrow(data)
+tt <- (Y_A-Y_B)#/(sqrt(sp/6))
+set.seed(532)
+nd <- sqrt(sp/6)*rt(1000,6)
+#randomization test
+perm <- permutations(2,8,c("A","B"),set = T,repeats.allowed = T)
+idx <- apply(perm,1,function(x){sum(x == "A")}) == 4
+perm <- perm[idx,]
+Td <- rep(NA,nrow(perm))
+for(i in 1:nrow(perm)){
+  data <- cbind.data.frame(x = perm[i,],y)
+  idx <- data$x == "A"
+  Y_A <- mean(data[idx,2])
+  Y_B <- mean(data[!idx,2])
+  Td[i] <- Y_A-Y_B
+}
+
+ggplot() +
+  geom_density(mapping = aes(x = nd)) +
+  geom_density(mapping = aes(x = Td)) +
+  geom_vline(mapping = aes(xintercept = tt), color = "red") +
+  labs(title = "null distribution under normal-theory")
+```
+
+## 4.
+
+$(n-1)s^2/\sigma^2 \sim \chi^2_{n-1}$
+
+#### (a)
+
+Test stat: $t(y) = s^2$
+H: $\sigma^2 = \sigma^2_0$
+since $(n-1)s^2/\sigma^2 \sim \chi^2_{n-1}$, $Pr(\chi^2_{\alpha/2}<\frac{(n-1)s^2}{\sigma^2}<\chi^2_{1 - \alpha/2}) = 1-\alpha$, where $\chi^2_{\alpha/2}\; and\; \chi^2_{1-\alpha/2}$ are quantile of $\chi^2_{n-1}$.
+
+Level-$\alpha$ test: $Pr(t(y) \notin A(\sigma^2_0)\mid H) \le \alpha$ 
+$\rightarrow Pr(t(y) \in A(\sigma^2_0)\mid H) \ge 1-\alpha$  
+$\rightarrow Pr(s^2 \in A(\sigma^2_0)\mid H) \ge 1-\alpha$. 
+we showed $Pr(\chi^2_{\alpha/2}<\frac{(n-1)s^2}{\sigma^2}<\chi^2_{1 - \alpha/2}) = 1-\alpha$ $\rightarrow Pr(\frac{\sigma^2_0}{n-1}\chi^2_{\alpha/2}<s^2<\frac{\sigma^2_0}{n-1}\chi^2_{1 - \alpha/2}) = 1-\alpha$.
+
+Thus we can find that acceptance region $A(\sigma_0^2)$ for H:$\sigma^2 = \sigma^2_0$ is $(\frac{\sigma^2_0}{n-1}\chi^2_{\alpha/2},\frac{\sigma^2_0}{n-1}\chi^2_{1 - \alpha/2})$. If $s^2 > \frac{\sigma^2_0}{n-1}\chi^2_{1 - \alpha/2}$ or $s^2<\frac{\sigma^2_0}{n-1}\chi^2_{\alpha/2}$, then reject H. Otherwise, accpet H.
+
+#### (b)
+
+$$
+\begin{aligned}
+&Pr(S^2 \in A(\sigma^2_0)\mid H) = Pr(\sigma^2_0 \in c(y)\mid H) = 1-\alpha\\
+&where\; c(y)\; is \;confidence \;region\\
+&Pr(s^2 \in A(\sigma^2_0)\mid H) = Pr(\chi^2_{\alpha/2}<\frac{(n-1)s^2}{\sigma^2}<\chi^2_{1 - \alpha/2}) \\
+&= Pr(\frac{s^2}{n-1}\chi^2_{\alpha/2}<\sigma^2_0<\frac{s^2}{n-1}\chi^2_{1 - \alpha/2}) \\
+&= Pr(\sigma^2_0 \in c(y)\mid H) \\
+&\rightarrow c(y) = (\frac{s^2}{n-1}\chi^2_{\alpha/2},\frac{s^2}{n-1}\chi^2_{1-\alpha/2} )
+\end{aligned}
+$$

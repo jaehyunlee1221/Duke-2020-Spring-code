@@ -1,0 +1,345 @@
+---
+title: 'STA 532 Homework2'
+author: "Jae Hyun Lee, jl914"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+---
+
+```{r setup, message=F, warning=F, echo=F}
+library(tidyverse)
+require(magrittr)
+require(plyr)
+ggplot2::theme_set(ggplot2::theme_bw())
+knitr::opts_chunk$set(fig.align = 'center')
+```
+
+# HW3 for STA-532
+
+## 1.
+
+Let Y be a positive random variable. Use Jensen's inequality to relate
+
+#### (a)
+
+The function $f(y) = y^{p/q}$ is convex for $p/q >1$ 
+
+By Jensen's inequality
+
+$$
+\begin{aligned}
+&f(E(Y^q)) \le E(f(Y^q)) \\
+&\rightarrow [E(Y^q)]^{p/q} \le E((Y^q)^{p/q}) \\
+&\rightarrow E(Y^q)^{p/q} \le E(Y^p) \\
+&\rightarrow E(Y^q)^{1/q} \le E(Y^{p})^{1/p}
+\end{aligned}
+$$
+
+#### (b)
+
+The function $f(y) = 1/y$ is concave function
+
+By Jensen's inequality
+
+$$
+\begin{aligned}
+&E(f(Y)) \le f(E(Y)) \\
+&\rightarrow E(1/Y) \le 1/E(Y)
+\end{aligned}
+$$
+
+#### (c)
+
+The function $f(y) = logy$ is convex function
+
+By Jensen's inequality
+
+$$
+\begin{aligned}
+&f(E(Y)) \le E(f(Y)) \\
+&\rightarrow logE(Y) \le E(logY)
+\end{aligned}
+$$
+
+## 2.
+
+Let $(w_1,w_2,w_3) \sim Dirichlet(\alpha_1, \alpha_2, \alpha_3)$
+
+Then $P(w_1,w_2,w_3) = \frac{\Gamma(\sum \alpha_i)}{\prod \Gamma(\alpha_i)}\prod w_i^{\alpha_i -1}$ where $0 \le w_i < 1$ and $\sum w_i = 1$
+
+Let denote $\sum \alpha_i = \alpha_0$
+ 
+#### (a)
+
+Derive the expected value and variance of $w_j for j \in$ {1, 2, 3} 
+
+$$
+\begin{aligned}
+E(w_1) &= \int w_1 P_{w_1}(w_1)dw_1 \\
+&= \int w_1 (\int\int P(w_1, w_2, w_3) dw_2dw_3)dw_1 \\
+&= \int\int\int w_1 P(w_1,w_2,w_3)dw_1dw_2dw_3 \\
+&= \frac{\Gamma(\alpha_0)}{\prod \Gamma(\alpha_i)} \int\int\int \underbrace{w_1^{\alpha_1 +1-1}w_2^{\alpha_2 -1}w_3^{\alpha_3 -1}}_{kernel \;of\; dirichlet(\alpha_1 +1,\alpha_2,\alpha_3) }dw_1dw_2dw_3 \\
+&= \frac{\Gamma(\alpha_0)}{\Gamma(\alpha_1)\Gamma(\alpha_2)\Gamma(\alpha_3)} \times \frac{\Gamma(\alpha_1 +1)\Gamma(\alpha_2)\Gamma(\alpha_3)}{\Gamma(\alpha_0+1)} = \frac{\alpha_1}{\alpha_0} \\
+&simliarly \quad E(w_2) = \frac{\alpha_2}{\alpha_0}, \quad E(w_3) = \frac{\alpha_3}{\alpha_0}
+\end{aligned}
+$$
+
+
+$$
+\begin{aligned}
+E(w_1^2) &= \frac{\Gamma(\alpha_0)}{\Gamma(\alpha_1)\Gamma(\alpha_2)\Gamma(\alpha_3)} \times \frac{\Gamma(\alpha_1+2)\Gamma(\alpha_2)\Gamma(\alpha_3)}{\Gamma(\alpha_0 +2)} \\
+&= \frac{\alpha_1(\alpha_1+1)}{\alpha_0(\alpha_0+1)} \\
+\rightarrow var(w_1) &= E(w_1^2) - E(w_1)^2 \\
+&= \frac{\alpha_1}{\alpha_0}(\frac{\alpha_1 +1}{\alpha_0+1} - \frac{\alpha_1}{\alpha_0})\\
+&= \frac{\alpha_1}{\alpha_0}(\frac{\alpha_0\alpha_1 + \alpha_0 - \alpha_0\alpha_1 - \alpha_1}{(\alpha_0\alpha_0+1)}) \\
+&= \frac{\alpha_1(\alpha_2+\alpha_3)}{\alpha_0^2(\alpha_0+1)} \\
+Likewise\quad  &var(w_2) = \frac{\alpha_2(\alpha_1+\alpha_3)}{\alpha_0^2(\alpha_0+1)}, \quad var(w_3) = \frac{\alpha_3(\alpha_1+\alpha_2)}{\alpha_0^2(\alpha_0+1)}
+\end{aligned}
+$$
+
+#### (b)
+
+Derive the covariance of $w_1$ and $w_2$, and explain intuitively the sign of the result.
+
+
+$$
+\begin{aligned}
+cov(w_1,w_2) &= E[(w_1 - \alpha_1/\alpha_0)(w_2 - \alpha_2/\alpha_0)] \\
+&= E(w_1w_2) - 2 \frac{\alpha_1\alpha_2}{\alpha_0^2} + \frac{\alpha_1\alpha_2}{\alpha_0^2} \\
+&= E(w_1w_2) - \frac{\alpha_1\alpha_2}{\alpha_0^2} \\
+&= \frac{\Gamma(\alpha_0)}{\Gamma(\alpha_1)\Gamma(\alpha_2)\Gamma(\alpha_3)} \times \frac{\Gamma(\alpha_1+1)\Gamma(\alpha_2+1)\Gamma(\alpha_3)}{\Gamma(\alpha_0+2)} - \frac{\alpha_1\alpha_2}{\alpha_0^2} \\
+&= \frac{\alpha_1\alpha_2}{\alpha_0(\alpha_0+1)} - \frac{\alpha_1\alpha_2}{\alpha_0^2} = -\frac{\alpha_1\alpha_2}{\alpha_0^2(\alpha_0+1)}
+\end{aligned}
+$$
+
+They must have negative relationship because $w_1+w_2+w_3 = 1$. If $w_1$ increase then $w_2$ must be reduced to satisfy $w_1+w_2+w_3 = 1$.
+
+#### (c)
+
+Derive the variance of $w_1$ and of $w_1+w_2$
+
+for $var(w_1)$, as we got at (a)
+
+$$
+\begin{aligned}
+var(w_1) = \frac{\alpha_1(\alpha_2+\alpha_3)}{\alpha_0^2(\alpha_0+1)}
+\end{aligned}
+$$
+and $w_1+w_2 = 1 - w_3$. Thus
+
+$$
+\begin{aligned}
+var(1-w_3) = var(w_3) = \frac{\alpha_3(\alpha_1+\alpha_2)}{\alpha_0^2(\alpha_0+1)}
+\end{aligned}
+$$
+
+#### (d)
+
+Derive the distribution of $w_1$ and of $w_1 + w_2$
+
+$$
+\begin{aligned}
+P(w_1,w_2,w_3) &= \frac{\Gamma(\alpha_0)}{\prod(\Gamma(\alpha_i))}w_1^{\alpha_1-1}w_2^{\alpha_2-1}w_3^{\alpha_3-1} \\
+&= \frac{\Gamma(\alpha_0)}{\prod(\Gamma(\alpha_i))}w_1^{\alpha_1-1}w_2^{\alpha_2-1}(1-w_1-w_2)^{\alpha_3-1} \\
+&= P(w_1,w_2) \quad and \quad w_3 >0 \rightarrow w_1+w_2 <1, w_1>0,w_2>0
+\end{aligned}
+$$
+Thus,
+
+$$
+\begin{aligned}
+P(w_1) &= \int P(w_1,w_2)dw_2 \\
+&= \frac{\Gamma(\alpha_0)}{\prod(\Gamma(\alpha_i))}w_1^{\alpha_1-1}\int_0^{1-w_1} w_2^{\alpha_2-1}(1-w_1-w_2)^{\alpha_3-1}dw_2 \\
+Let \quad w_2 &= (1-w_1)u \quad then \quad dw_2 = (1-w_1)du \\
+Then \quad P(w_1) &= \frac{\Gamma(\alpha_0)}{\prod \Gamma(\alpha_i)}w_1^{\alpha_1 -1}(1-w_1)^{\alpha_2 + \alpha_3 -1} \int \underbrace{u ^{\alpha_2 -1 }(1-u)^{\alpha_3 -1}}_{kernel\;of \;beta(\alpha_2,\alpha_3)}du \\
+\rightarrow P(w_1) &= \frac{\Gamma(\alpha_0)}{\Gamma(\alpha_1)\Gamma(\alpha_2)\Gamma(\alpha_3)} \times \frac{\Gamma(\alpha_2)\Gamma(\alpha_3)}{\Gamma(\alpha_2+\alpha_3)}w_1^{\alpha_1}(1-w_1)^{\alpha_2+\alpha_3 -2}
+\\ &= \frac{\Gamma(\alpha_0)}{\Gamma(\alpha_1)\Gamma(\alpha_2+\alpha_3)} w_1^{\alpha_1}(1-w_1)^{\alpha_2+\alpha_3 -2}
+\end{aligned}
+$$
+Which is pdf of $beta(\alpha_1, \alpha_2+\alpha_3)$. Thus $w_1 \sim beta(\alpha_1, \alpha_2+\alpha_3)$.
+
+Let $w_1+w_2 = X$, $w_1 = Y$, That is $g_1(x,y) = x+y, g_2(x,y) = y$ which are inversible and 0<y<x<1.
+
+By change of variable formula.
+
+
+$$
+\begin{aligned}
+P(X,Y) &= P(Y, X-Y)
+\begin{vmatrix} \frac{dw_1}{dX} & \frac{dw_1}{dY} \\ \frac{dw_2}{dX} & \frac{dw_2}{dY} \end{vmatrix} \\ 
+&=\frac{\Gamma(\alpha_0)}{\prod P(\alpha_i)} Y^{\alpha_1-1}(X-Y)^{\alpha_2 -1}(1- X)^{\alpha_3-1}\times
+\begin{vmatrix}0 & 1 \\ 1 & -1 \end{vmatrix} \\
+&= \frac{\Gamma(\alpha_0)}{\prod P(\alpha_i)} (1-X)^{\alpha_3-1}(X-Y)^{\alpha_2-1}Y^{\alpha_1-1} \\
+\rightarrow P(X) &= \frac{\Gamma(\alpha_0)}{\prod P(\alpha_i)} (1-X)^{\alpha_3-1}\int_0^X (X-Y)^{\alpha_2-1}Y^{\alpha_1-1}dY \quad and \; Let \; Y = Xu \\
+&= \frac{\Gamma(\alpha_0)}{\prod P(\alpha_i)}(1-X)^{\alpha_3-1}\int_0^1 (X(1-u))^{\alpha_2-1}(Xu)^{\alpha_1-1}Xdu \\
+&= \frac{\Gamma(\alpha_0)}{\prod P(\alpha_i)}(1-X)^{\alpha_3-1}X^{\alpha_1+\alpha_2-1}\times\frac{\Gamma(\alpha_1)\Gamma(\alpha_2)}{\Gamma(\alpha_1+\alpha_2)}\\
+\end{aligned}
+$$
+
+## 3.
+
+#### (a)
+
+Show that if X and Y are independent then Cov(X,Y) = 0
+
+By property of independence, E(XY) = E(X)E(Y)
+
+$$
+\begin{aligned}
+Cov(X,Y) &= E[(X - E(X))(Y- E(Y))] \\
+&= E(XY) - E(X)E(Y) = 0
+\end{aligned}
+$$
+
+#### (b)
+
+Show that if X = a + bY then Cor(X,Y) = 1 or -1
+
+$$
+\begin{aligned}
+Cov(X,Y) &= Cov(a+bY,Y) \\
+&= E[b(Y-E(Y))(Y-E(Y))] \\
+&=bE((Y-E(Y))^2) \\
+and \; var(X) &= b^2var(Y) \\
+Cor(X,Y) &= Cov(X,Y)/\sqrt{b^2var(Y)^2} \\
+& = sign(b) = 1 \;or\; -1
+\end{aligned}
+$$
+
+#### (c)
+
+Let X_1,X_2,X_3 be three potentially correlated random variables.
+
+i. Compute $Cov[a_1 + b_1X_1,a_2 +b_2X_2]$
+
+$$
+\begin{aligned}
+Cov(a_1 +b_1X_1, a_2+b_2X_2)  &= E[(b_1X_1 + a_1 - E(b_1X_1+a_1))(b_2X_2+a_2 - E(b_2X_2 + a_2))] \\
+&= E[b_1b_2(X_1-E(X_1))(X_2 - E(X_2))] \\
+&= b_1b_2E[(X_1 - E(X_1))(X_2 - E(X_2))] \\
+& = b_1b_2Cov(X_1,X_2)
+\end{aligned}
+$$
+
+ii. Compute $E(X_1+X_2+X_3)$ and $Var(X_1 + X_2 + X_3)$ using the definition of expectation and variance, and check that your answer matches the formula from class.
+
+Let we have joint pdf of $X_1,X_2,X_3, P(X_1,X_2,X_3)$
+
+$$
+\begin{aligned}
+E(X_1+X_2+X_3) &= \int\int\int(X_1+X_2+X_3)P(X_1,X_2,X_3)dX_1dX_2dX_3 \\
+&= \int\int\int X_1P(X_1,X_2,X_3)dX_1dX_2dX_3 +\int\int\int X_2P(X_1,X_2,X_3)dX_1dX_2dX_3 \int\int\int X_3P(X_1,X_2,X_3)dX_1dX_2dX_3 \\
+&= \int X_1P_{X_1}(X_1)dX_1+\int X_2P_{X_2}(X_2)dX_2 + \int X_3P_{X_3}(X_3)dX_3 \\
+&= E(X_1) + E(X_2) +E(X_3)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+Var(X_1+X_2+X_3) &= E((X_1 +X_2+X_3 - E(X_1+X_2+X_3))^2) \\
+&= E[((X_1-E(X_1))+(X_2-E(X_2))+(X_3-E(X_3))^2]\\
+&= E[(X_1 - E(X_1))^2] +  E[(X_2 - E(X_2))^2] +  E[(X_3 - E(X_3))^2]\\ &+2E[(X_1 - E(X_1))(X_2-E(X_2))]+2E[(X_2 - E(X_2))(X_3-E(X_3))] + 2E[(X_1 - E(X_1))(X_3-E(X_3))] \\
+&= Var(X_1) + Var(X_2) + Var(X_3) + 2\sum_{i \neq j} Cov(X_i,X_j)
+\end{aligned}
+$$
+
+Which is corresponding with formula from class.
+
+## 4.
+
+#### (a) 
+
+Compute the expectation and variance of $Y_1,Y_2 \;and\; Y_3$ 
+
+$$
+\begin{aligned}
+&E(Y_1) = E(Y_2) = E(Z+X_1) = E(Z+X_2) = E(Z)+E(X_1) = E(Z) +E(X_2) = 0 \\
+&E(Y_3) = E(Z^2 +X_3) = E(Z^2) +E(X_3) = Var(Z) + 0  = 1
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+&Var(Y_1) = Var(Y_2) = Var(Z+X_1) = Var(Z+X_2) \\
+&=Var(Z)+Var(X_1) = Var(Z)+Var(X_2) = 2
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+Var(Y_3) &= Var(Z^2 +X_3)\\
+&= Var(Z^2)+Var(X_3)\\
+&= E[(Z^2 - E(Z^2))^2] +1 \\
+&= E[Z^4 - 2Z^2 +1] +1 \\
+&= 3-2+1+1 = 3
+\end{aligned}
+$$
+
+#### (b)
+
+$$
+\begin{aligned}
+Cov(Y_1,Y_2) &= Cov(Z+X_1,Z+X_2) \\
+&= Cov(Z+X_1,Z) + cov(Z+X_1,X_2) \\
+&= Cov(Z,Z) + Cov(X_1,Z) + Cov(Z,X_2)+Cov(X_1,X_2) \\
+&= Var(Z) = 1 \\
+Cov(Y_1,Y_3) &= Cov(Z+X_1,Z^2+X_3) \\
+&= Cov(Z,Z^2) + Cov(Z,X_3) + Cov(X_1,Z^2) + Cov(X1,X_3) \\
+&= E(Z(Z^2-1)) +E(ZX_3) + E(X_1(Z^2-1)) \quad funtions \; are \; also\; independent\\
+&= E(Z^3 -Z) = 0 = Cov(Y_2,Y_3) 
+\end{aligned}
+$$
+
+Thus, Covariance matrix is 
+
+$$
+\begin{aligned}
+\begin{pmatrix}2 & 1 & 0\\
+1 & 2 &0 \\
+0& 0& 3\end{pmatrix}
+\end{aligned}
+$$
+
+#### (c)
+
+Are $Y_$1 and $Y_3$ independent?
+
+No, because $P(Y_3 \mid Y_1) \neq P(Y_3)$, for
+
+$$
+\begin{aligned}
+P(Y_3 \mid Y_1) &= P(Z^2 + X_3 \mid Y_1) \\
+& = P(Z^2 + X_3 \mid Z+X_1) \\
+&\neq P(Z^2+X_3)
+\end{aligned}
+$$
+because $Z^2+X_3$ is affected by Z value determined by $Y_1$
+
+## 5.
+
+For two jointly distributed random variables X and Y and functions f and g, show that
+
+#### (a)
+
+E[E[f(Y)|X]] = E[f(Y)]
+
+$$
+\begin{aligned}
+E(f(Y) \mid X) &= \int f(Y)P_{Y\mid X(Y \mid X)}dY \\
+&= \int f(Y) \frac{P(X,Y)}{P_X(X)})dY \\
+&= \frac{1}{P_X(X)} \int f(Y)P(X,Y)dY \\
+E[E(f(Y)\mid X)] &= \int E(f(Y)\mid X) P_X(X)dX \\
+&= \int \frac{1}{P_X(X)} \int f(Y)P(X,Y)dY P_X(X)dX \\
+&= \int\int f(Y)P(X,Y)dXdY \\
+&= E[f(Y)]
+\end{aligned}
+$$
+
+#### (b)
+
+$$
+\begin{aligned}
+E[f(X)g(X,Y)\mid X] &= \int f(X)g(X,Y)P(Y \mid X)dY \\
+&= f(X) \int g(X,Y)P(Y \mid X) dY \\
+&= f(X)E[g(X,Y) \mid Y]
+\end{aligned}
+$$

@@ -1,0 +1,48 @@
+---
+title: "Question about project"
+author: "Jae Hyun Lee, jl914"
+date: "4/5/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question
+
+Professor, I want to ask theoretical question about my project model.
+
+As I describe at my project proposal, I decided to set up model which is linear regression model whose regression coefficients are time varying.
+
+My model set up is as follow:
+$O_t$ is number of observation at time t, $p$ is number of predictor in linear regression, and C is constant term in VAR(1) model.  
+
+$$
+\begin{aligned}
+&Y_t = X_t\beta_t + \epsilon_t \;where \; \epsilon_t\sim N(0,\nu_t I_n) \\
+&\beta_t = C+ G \beta_{t-1} + w_t \;where\; w_t \sim N(0,\nu_t/s_{t-1}W_t). \\
+&Y_t = O_t\times1, \; X_t = O_t \times p ,\; \beta_t = p \times 1, \;\epsilon_t = O_t \times1\ \\
+&G = p\times p, W_t = p\times p
+\end{aligned}
+$$
+with prior set up as usual volatile model, I found $beta_t$ and $\nu_t$ evolve as below:
+
+$$
+\begin{aligned}
+&\nu_{t-1}\mid D_{t-1} \rightarrow \nu_t\mid D_{t-1} \sim IG(\frac{bn_{t-1}}{2},\frac{bn_{t-1}s_{t-1}}{2}) \\
+&\beta_{t-1} \mid D_{t-1} \rightarrow \beta_t \mid D_{t-1} \sim N(a_t, \nu_t/s_{t-1} R_t) \\
+&where\; a_t = C + Gm_{t-1} \; , R_t = GC_{t-1}G'/d
+\end{aligned}
+$$
+
+And by using bayesian regression update formula, I succeed to draw forward filtering formula. But I keep failing  for backward smoothing. I checked that eigenstructure of my evolution matrix G has moduli less than 1 which is also stationary condition for VAR. I think it makes forward filtering work well. But I found that in my setting this stationarity cause severe problem in backward smoothing.
+
+In my setting, backward smoothing coefficient formula can be organized as follow:
+
+$$
+\begin{aligned}
+B_t = C_{t-1}G'R_t^{-1} = dG^{-1}
+\end{aligned}
+$$
+And this backward coefficient is multiplied for every backward step. The problem is that this G had eigenvalues smaller than 1. By inverting G, $G^{-1}$ has bigger moduli than 1 which makes my previous filerted estimates bigger and bigger. So I want to ask how to deal with this problem.

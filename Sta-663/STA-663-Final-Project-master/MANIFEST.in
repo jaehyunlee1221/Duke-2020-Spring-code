@@ -1,0 +1,8 @@
+include README.md
+
+include LICENSE.txt
+
+recursive-include data *
+
+include *.html
+include *.ipynb

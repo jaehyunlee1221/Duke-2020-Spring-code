@@ -1,0 +1,473 @@
+---
+title: "Project - Analysis of housing price of Korea"
+author: "Jae Hyun Lee, jl914"
+date: "3/24/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyverse)
+library(lubridate)
+library(grid)
+library(gridExtra)
+set.seed(642)
+```
+
+```{r,include=FALSE}
+apartment <- read_csv("gangnam.csv")
+apartment <- apartment %>% 
+  mutate_if(is.character,as.factor) %>% 
+  dplyr::select(-city, -name, -road_name, -district) %>% 
+  mutate(price = price/100, date = as_date(str_c(month,"01")), age = year(date)-built) %>% 
+  mutate(lprice = log(price), lsize = log(size), lfloor = log(floor), lage = log(age+1))
+idx <- apply(apartment,1,function(x){sum(is.na(x))})#is.na(apartment$lage)
+apartment <- apartment[idx==0,]
+test <- read_csv("test.csv")
+test <- test %>% 
+  mutate_if(is.character,as.factor) %>% 
+  dplyr::select(-city, -name, -road_name, -district) %>% 
+  mutate(price = price/100, date = as_date(str_c(month,"01")), age = year(date)-built) %>% 
+  mutate(lprice = log(price), lsize = log(area), lfloor = log(floor), lage = log(age+1))
+idx <- is.na(test$lfloor)
+test <- test[!idx,]
+```
+
+## EDA
+
+```{r}
+m_price <- apartment %>% 
+  group_by(date) %>% 
+  dplyr::summarise(lprice = mean(lprice), count = dplyr::n())
+ggplot() +
+  geom_line(data = m_price, mapping = aes(x = date, y = lprice)) +
+  labs(title = "average log(price) of apartment in Korea currency")
+```
+
+```{r, include=FALSE}
+data <- apartment %>% 
+  dplyr::select(lprice,lsize,lage,date)
+predictors <- c("lsize", "lage")
+T <- nrow(m_price)
+ti <- sort(unique(data$date))
+betas <- matrix(rep(NA,T*3),ncol = 3)
+sigmas <- matrix(rep(NA,T))
+n = matrix(rep(NA,T))
+resid <- list()
+cor_mat <- list()
+for(i in 1:T){
+  idx <- data$date == ti[i] 
+  newdata <- data[idx,]
+  model <- lm(data = newdata, lprice~lsize+lage)
+  betas[i,] <- model$coefficients
+  sigmas[i] <- summary(model)$sigma^2
+  n[i] <- nrow(newdata)
+  resid[[i]] <- summary(model)$residuals
+}
+betas <- as.data.frame(betas) %>% 
+  `colnames<-`(c(paste0("beta",1:3)))
+plot_list <- list()
+plot_list[[1]] <- ggplot(data = betas) +
+  geom_line(mapping = aes(x = ti, y = beta1)) +
+  labs(title = "coefficient of intercept")
+plot_list[[2]] <- ggplot(data = betas) +
+  geom_line(mapping = aes(x = ti, y = beta2)) +
+  labs(title = "coefficient of log(Size)")
+#plot_list[[3]] <- ggplot(data = betas) +
+#  geom_line(mapping = aes(x = ti, y = beta3)) +
+#  labs(title = "coefficient of log(Floor)")
+plot_list[[3]] <- ggplot(data = betas) +
+  geom_line(mapping = aes(x = ti, y = beta3)) +
+  labs(title = "coefficient of log(Age)")
+plot_sigma <- ggplot()+
+  geom_line(mapping = aes(x = ti, y = sigmas))+
+  labs(title = "time varying sigma")
+sam <- sample(1:168,2)
+```
+
+For the target variable, I decided to log transform original target variable to satisfy normality assumption of model. As a result, we can see that normality assumptions for each time point is not severely violated.
+
+```{r, fig.align='center', fig.height=3.5, fig.width=7}
+par(mfrow = c(1,2))
+qqnorm(resid[[sam[1]]])
+  qqline(resid[[sam[1]]],col = "red")
+qqnorm(resid[[sam[2]]]) 
+  qqline(resid[[sam[2]]],col = "red")
+```
+
+Evolution matrix $G_t$ is not determined yet, but first attempt would be AR(1) model. It will be extended to AR(p) or TAVR(p). Since linear regression assumes that errors are indepedent, I will apply that assumption in my model too. In evolving and updating process, I will use result from course materials and P&W.
+
+I have confirmed that my first inspiration time varying slope is reasonable hen we investigate $\beta$s of each time point. At these plots, we can find that we should fit time varying coefficients rather than constants.
+
+```{r, fig.align='center', fig.height=4, fig.width=7}
+grid.arrange(grobs = plot_list,nrow = 2)
+```
+
+we can also find that estimated variance of $y_t$ becomes very unstable, thus I plan to use volatile model and large discount factor for $V(v_t) = \nu_t$ to reflect this phenomenon. 
+
+```{r,fig.align='center', fig.height=2, fig.width=4}
+plot_sigma
+```
+
+## Time varying regression
+
+```{r}
+G <- diag(rep(1,3),nrow = 3)
+T <- length(ti)
+q <- length(betas)
+#priors (beta,vt|D0)
+nu0 = 100; S0 = 0.3^2
+m0 = c(1,1,0)
+C0 = diag(diag(cov(betas)),nrow = 3)
+#discount factor
+b = 0.80; d = 0.95
+sm = sa = matrix(rep(0,q*T),nrow = q); sC = sR = array(rep(0,q*q*T),dim = c(q,q,T)) 
+sf = sQ = list()
+sS = snu = rep(0,T)
+nu <- nu0; S = S0; m <- m0; C <- C0
+#Foreward filtering
+for(t in 1:T){
+  idx = data$date == ti[t]
+  yt = data$lprice[idx]; ot = length(yt)
+  X = as.matrix(cbind.data.frame(intercept = rep(1,sum(idx)),data[idx,-c(1,4)]))    #regression matrix
+  
+  #evolve
+  nu <- b*nu
+  sa[,t] <- a <- G%*%m
+  sR[,,t] <- R <- G%*%C%*%t(G)/d
+
+  #forecast
+  sf[[t]] <- f <- X%*%a
+  sQ[[t]] <- Q <- X%*%R%*%t(X) + diag(rep(S,ot),nrow = ot)
+  
+  #update
+  Tt <- solve(t(X)%*%X + c(S)*solve(R))
+  sm[,t] <- m <- Tt%*%(t(X)%*%yt + c(S)*solve(R)%*%a)
+  sS[t] <- S <- (nu*c(S) + t(yt)%*%yt + c(S)*t(a)%*%solve(R)%*%a - t(m)%*%solve(Tt)%*%m)/(nu +ot)
+  snu[t] <- nu <- nu + ot
+  sC[,,t] <- C <- Tt/c(S)
+}
+```
+
+
+## VAR(1) model for betas
+
+$G_t = G= \begin{bmatrix}\phi_{11}&\cdots&\phi_{14} \\\phi_{21} &\cdots &\phi_{24}\\\phi_{31} &\cdots &\phi_{34} \\ \phi_{41} &\cdots &\phi_{44}\end{bmatrix}$
+
+```{r}
+VAR <- function(x,p){
+  x <- apply(x,2,function(x){x - mean(x)})
+  n <- dim(x)[1] #number of time point
+  q <- dim(x)[2] #number of series
+  b <- matrix(rep(NA,q*q*p),nrow = q)
+  X <- matrix(rep(NA,(n-p)),nrow = n-p)
+  for(j in 0:(p-1)){
+      X <- cbind(X,x[(p-j):(n-1-j),])
+  }
+  X <- X[,-1]
+  B <- t(X) %*% X  
+  for(i in 1:q){
+    y <- x[-(1:p),i]
+    b[i,] <- solve(B) %*% t(X) %*% y
+  }
+  return(list(b = b, B = B))
+}
+```
+
+## R var function
+
+```{r}
+library(vars)
+betas2 <- ts(beta)
+vars::VAR(y = betas2, p = 1,type = "none")
+VAR(beta,1)
+```
+
+## stationarity check for VAR(1)
+
+```{r}
+G <- VAR(betas, 2)$b
+#eye4 = diag(rep(1,4),nrow = 4)
+#eigen(eye4 - G)
+eigen(G)
+```
+
+```{r}
+inv <- function(m){
+  result <- eigen(m)
+  vec <- result$vectors
+  lamb <- result$values
+  return(vec%*%diag(1/lamb,nrow = nrow(vec))%*%solve(vec))
+} 
+G <- VAR(betas,1)$b
+T <- length(ti)
+q <- length(betas)
+#priors (beta,vt|D0)
+nu0 = 100; S0 = 0.3^2
+m0 = c(1,1,0)
+C0 = diag(diag(cov(betas)),nrow = 3)
+#discount factor
+b = 0.80; d = 0.95
+sm = sa = matrix(rep(0,q*T),nrow = q); sC = sR = array(rep(0,q*q*T),dim = c(q,q,T)) 
+sf = sQ = list()
+sS = snu = rep(0,T)
+nu <- nu0; S = S0; m <- m0; C <- C0
+#Foreward filtering
+for(t in 1:T){
+  idx = data$date == ti[t]
+  yt = data$lprice[idx]; ot = length(yt)
+  X = as.matrix(cbind.data.frame(intercept = rep(1,sum(idx)),data[idx,-c(1,4)]))    #regression matrix
+  
+  #evolve
+  nu <- b*nu
+  sa[,t] <- a <- G%*%m
+  sR[,,t] <- R <- G%*%C%*%t(G)/d
+
+  #forecast
+  sf[[t]] <- f <- X%*%a
+  sQ[[t]] <- Q <- X%*%R%*%t(X) + diag(rep(S,ot),nrow = ot)
+  
+  #update
+  Tt <- solve(t(X)%*%X + c(S)*solve(R))
+  sm[,t] <- m <- Tt%*%(t(X)%*%yt + c(S)*solve(R)%*%a)
+  sS[t] <- S <- (nu*c(S) + t(yt)%*%yt + c(S)*t(a)%*%solve(R)%*%a - t(m)%*%solve(Tt)%*%m)/(nu +ot)
+  snu[t] <- nu <- nu + ot
+  sC[,,t] <- C <- Tt/c(S)
+}
+
+```
+
+
+##
+
+FFBS with $\beta \sim VAR(1)$
+
+```{r}
+G <- VAR(betas,2)$b #Evolution matrix
+G1 <- G[,1:4];G2 <- G[,5:8]
+#G <- diag(rep(1.2,4),nrow = 4)
+T <- length(ti)
+q <- ncol(betas)
+#priors (beta,vt|D0)
+nu0 = 100; S0 = 0.3^2
+m0 = c(1,1,0,0)
+C0 = diag(diag(cov(betas)),nrow = 4)
+#discount factor
+b = 0.99; d = 0.99
+sm = sa = matrix(rep(0,q*(T+2)),nrow = q); sC = sR = array(rep(0,q*q*(T+2)),dim = c(q,q,(T+2))) 
+sf = sQ = list()
+sS = snu = rep(0,T)
+nu <- nu0; S = S0; m <- m0; C <- C0
+sm[,1:2] <- rep(m0,2)
+sC[,,1:2] <- rep(C0,2)
+#Foreward filtering
+for(t in 1:T){
+  idx = data$date == ti[t]
+  yt = data$lprice[idx]; ot = length(yt)
+  X = as.matrix(cbind.data.frame(intercept = rep(1,sum(idx)),data[idx,-c(1,5)]))    #regression matrix
+  
+  #evolve
+  nu <- b*nu
+  sa[,t] <- a <- G1%*%sm[,t+1] + G2%*%sm[,t]
+  sR[,,t] <- R <- (G1%*%sC[,,t+1]%*%t(G1) + G2%*%sC[,,t]%*%t(G2))/d
+
+  #forecast
+  sf[[t]] <- f <- X%*%a
+  sQ[[t]] <- Q <- X%*%R%*%t(X) + diag(rep(S,ot),nrow = ot)
+  
+  #update
+  Tt <- inv(t(X)%*%X + c(S)*inv(R))
+  sm[,t+2] <- m <- Tt%*%(t(X)%*%yt + c(S)*inv(R)%*%a)
+  sS[t] <- S <- (nu*c(S) + t(yt)%*%yt + c(S)*t(a)%*%inv(R)%*%a - t(m)%*%inv(Tt)%*%m)/(nu +ot)
+  snu[t] <- nu <- nu + ot
+  sC[,,t+2] <- C <- Tt/c(S)
+}
+sm <- sm[,-(1:2)]
+sa <- sa[,-(1:2)]
+#backward smoothing
+mf <- sm; Cf <- sC; sf <- sS; nuf <- snu;
+for(t in (T-1):1){
+  sm[,t] <- (1-d)*sm[,t] + d*sm[,(t+1)]
+  #if(t > p){
+  #  e[t] <- x[t] - t(m[,t]) %*% x[(t-1):(t-p)]
+  #}
+  snu[t] <- (1-b)*snu[t]+ b*snu[t+1]
+  st <- sS[t]; sS[t] <- 1/((1-b)/st + b/sS[t+1])
+  sC[,,t] <- sS[t] * ((1-d)*sC[,,t]/st + d*d*sC[,,(t+1)]/sS[t+1])
+}
+
+```
+
+
+```{r}
+for(t in 1:T){
+  idx = data$date == ti[t]
+  yt = data$lprice[idx]; ot = length(yt)
+  X = as.matrix(cbind.data.frame(intercept = rep(1,sum(idx)),data[idx,-c(1,5)]))    #regression matrix
+  
+  #evolve
+  nu <- b*nu
+  sa[,t] <- a <- G%*%m
+  sR[,,t] <- R <- G%*%C%*%t(G)/d
+
+  #forecast
+  sf[[t]] <- f <- X%*%a
+  sQ[[t]] <- Q <- diag(X%*%R%*%t(X) + diag(rep(S,ot),nrow = ot))
+  
+  #update
+  e <- yt - f;
+  A <- R%*%t(X)/matrix(rep(Q,q),nrow = q, byrow = T)
+  
+  r <- (nu+sum(e^2/q))/(nu + ot)
+  snu[t] <- nu <- nu + ot
+  sS[t] <- S <- S*r
+  sm[,t] <- m <- a + A%*%e
+  sC[,,t] <- C <- r*(R - (matrix(rep(Q,q),nrow = q, byrow = T)*A)%*%t(A))
+```
+
+```{r v1}
+data <- apartment %>% 
+  dplyr::select(lprice,lsize,lage,lfloor,date)
+predictors <- c("lsize","lage","lfloor")
+beta <- Tbeta(data,predictors)$beta
+sigma <- Tbeta(data,predictors)$sigma
+del <- c(0.95,0.95)
+p <- 1
+m0 <- c(1,1,1,0); C0 <- diag(diag(cov(beta)),nrow = ncol(beta));
+n0 <- 100; S0 <- 0.3^2
+lmvar <- function(data,beta,p,del,m0,C0,n0,S0){
+  #dimension of process
+  ti <- sort(unique(data$date))
+  T <- dim(beta)[1]
+  q <- dim(beta)[2]
+  
+  #evolution matrix based on beta
+  Gs <- VAR(beta,p,"c")$b
+  #trend <- Gs[,1]
+  const <- Gs[,1]
+  G <- array(Gs[,-1],dim = c(q,q,p))
+  
+  #return object allocation
+  m <- a <- matrix(rep(0,q*(T+p)),nrow = q); C <- R <- array(rep(0,q*q*(T+p)),dim = c(q,q,(T+p))) 
+  f <- Q <- list()
+  S <- n <- rep(0,T)
+  
+  #initial values
+  b <- del[1]; d <- eigen(Gs)$values[which.min(eigen(Gs)$values)] - 0.01
+  St <- S0; nt <- n0
+  m[,(1:p)] <- rep(m0,p); mt <- m0
+  C[,,(1:p)] <- rep(C0,p); Ct <- C0
+  
+  #forwarding filtering
+  for(t in 1:T){
+    idx = data$date == ti[t]
+    yt = data$lprice[idx]; ot = length(yt)
+    X = as.matrix(cbind(rep(1,sum(idx)),data[idx,colnames(beta)[-1]]))    #regression matrix
+  
+    #evolve
+    nt <- b*nt
+    a[,t] <- at <- evolve(G=G,p=p,m = m[,(t+p-1):t])
+    R[,,t] <- Rt <- evolve(G=G,p=p,C = C[,,(t+p-1):t])/d
+
+    #forecast
+    f[[t]] <- ft <- X%*%at
+    Q[[t]] <- Qt <- X%*%Rt%*%t(X) + diag(rep(St,ot),nrow = ot)
+  
+    #update
+    Tt <- solve(t(X)%*%X + c(St)*solve(Rt))
+    m[,t+p] <- mt <- Tt%*%(t(X)%*%yt + c(St)*solve(Rt)%*%at)
+    S[t] <- St <- (nt*c(St) + t(yt)%*%yt + c(St)*t(at)%*%solve(Rt)%*%at - t(mt)%*%solve(Tt)%*%mt)/(nt +ot)
+    n[t] <- nt <- nt + ot
+    C[,,t+p] <- Ct <- Tt/c(St) 
+  }
+  #backward smoothing
+  mf <- m; Cf <- C; Sf <- S; nf <- n;
+  #Gb <- rbind(Gs,diag(rep(1,dim(Gs)[2])))[1:dim(Gs)[2],]
+  #mb <- rbind(mb[,T+p])
+  Ct <- C[,,T]; St <- S[T]; nt <- n[T]
+  B <- d*solve(G[,,1])
+  #for(t in (T-1):1){
+  #  m[,t] <- (1-d)*m[,t] + d*m[,(t+1)]
+  #  n[t] <- (1-b)*n[t]+ b*n[t+1]
+  #  St <- S[t]; S[t] <- 1/((1-b)/St + b/S[t+1])
+  #  C[,,t] <- S[t]*((1-d)*C[,,t]/St + d*d*C[,,(t+1)]/S[t+1])
+  #}
+  for(t in (T-1):1){
+    m[,t] <- (1-d)*m[,t] + B%*%(m[,(t+1)])
+    n[t] <- (1-b)*n[t] + b*n[t+1]
+    St <- S[t]; S[t] <- 1/((1-b)/St + b/S[t+1])
+    C[,,t] <- S[t]*((1-d)*C[,,t]/St + B%*%C[,,(t+1)]%*%t(B)/S[t+1])
+  }
+}
+```
+
+
+```{r}
+data <- apartment %>% 
+  dplyr::select(lprice,lsize,lfloor,lage,date)
+predictors <- c("lsize", "lfloor","lage")
+beta <- Tbeta(data,predictors)$beta
+del <- c(0.8,0.80)
+p <- 1
+m0 <- c(1,1,0,0); C0 <- diag(diag(cov(beta)),nrow = ncol(beta));
+n0 <- 100; S0 <- 0.3^2
+lmvar <- function(data,beta,p,del,m0,C0,n0,S0){
+  #dimension of process
+  ti <- sort(unique(data$date))
+  T <- dim(beta)[1]
+  q <- dim(beta)[2]
+  
+  #evolution matrix based on beta
+  Gs <- VAR(beta,p)$b
+  G <- array(Gs,dim = c(q,q,p))
+  
+  #return object allocation
+  m <- a <- matrix(rep(0,q*(T+p)),nrow = q); C <- R <- array(rep(0,q*q*(T+p)),dim = c(q,q,(T+p))) 
+  f <- Q <- list()
+  S <- n <- rep(0,T)
+  
+  #initial values
+  b <- del[1]; d <- del[2]
+  St <- S0; nt <- n0
+  m[,(1:p)] <- rep(m0,p); mt <- m0
+  C[,,(1:p)] <- rep(C0,p); Ct <- C0
+  
+  #forwarding filtering
+  for(t in 1:T){
+    idx = data$date == ti[t]
+    yt = data$lprice[idx]; ot = length(yt)
+    X = as.matrix(cbind(rep(1,sum(idx)),data[idx,colnames(beta)[-1]]))    #regression matrix
+  
+    #evolve
+    nt <- b*nt
+    a[,t] <- at <- evolve(G=G,p=p,m = m[,(t+p-1):t])
+    R[,,t] <- Rt <- evolve(G=G,p=p,C = C[,,(t+p-1):t])/d
+
+    #forecast
+    f[[t]] <- ft <- X%*%at
+    Q[[t]] <- Qt <- X%*%Rt%*%t(X) + diag(rep(St,ot),nrow = ot)
+  
+    #update
+    Tt <- solve(t(X)%*%X + c(St)*solve(Rt))
+    m[,t+p] <- mt <- Tt%*%(t(X)%*%yt + c(St)*solve(Rt)%*%at)
+    S[t] <- St <- (nt*c(St) + t(yt)%*%yt + c(St)*t(at)%*%solve(Rt)%*%at - t(mt)%*%solve(Tt)%*%mt)/(nt +ot)
+    n[t] <- nt <- nt + ot
+    C[,,t+p] <- Ct <- Tt/c(St) 
+  }
+  #backward smoothing
+  mf <- m; Cf <- C; Sf <- S; nf <- n;
+  #Gb <- rbind(Gs,diag(rep(1,dim(Gs)[2])))[1:dim(Gs)[2],]
+  #mb <- rbind(mb[,T+p])
+  Ct <- C[,,T]; St <- S[T]; nt <- n[T]
+  G <- VAR(beta,1)$b
+  B <- d*solve(G)
+  for(t in (T-1):1){
+    m[,t] <- (1-d)*m[,t] + B%*%m[,(t+1)]
+    n[t] <- (1-b)*n[t]+ b*n[t+1]
+    St <- S[t]; S[t] <- 1/((1-b)/St + b/S[t+1])
+    C[,,t] <- S[t]*((1-d)*C[,,t]/St + B%*%C[,,(t+1)]%*%t(B)/S[(t+1)])
+  }
+}
+```
+

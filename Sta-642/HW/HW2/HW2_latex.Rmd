@@ -1,0 +1,187 @@
+---
+title: 'STA 642 Homework2'
+author: "Jae Hyun Lee, jl914"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+---
+
+```{r setup, message=F, warning=F, echo=F}
+library(tidyverse)
+require(magrittr)
+require(plyr)
+ggplot2::theme_set(ggplot2::theme_bw())
+knitr::opts_chunk$set(fig.align = 'center')
+```
+
+# HW2 for STA-642
+
+
+## Exercise 2
+
+#### (a)
+
+$$
+\begin{aligned}
+&y_t = x_t+v_t, \; x_t = \phi x_{t-1} + \epsilon_t \\
+&y_{t-1} = x_{t-1} + v_{t-1}, \; x_{t-1} = y{t-1} - v_{t-1}\\
+&\rightarrow y_t = \phi y_{t-1} - \phi v_{t-1} + v_t + \epsilon_t = \phi y_{t-1} + \eta_t
+\end{aligned}
+$$
+
+#### (b)
+
+$$
+\begin{aligned}
+&Cov(\eta_t, \eta_{t-1}) = E(\epsilon_t + v_t - \phi v_{t-1}, \epsilon_{t-1}, v_{t-1}, -\phi_{t-2}) = -\phi E(v_{t-1}^2) = -\phi w \\
+&Var(\eta_t) = Var(\epsilon_t) + Var(v_t) + \phi^2Var(v_{t-1}) = v + w + \phi^2w = (1+\phi^2)w + v = Var(\eta_{t-1})\\
+&Cor(\eta_t,\eta_{t-1}) = \frac{-\phi w}{(1+\phi^2)w + v}
+\end{aligned}
+$$
+
+#### (c)
+
+$$
+\begin{aligned}
+&x_t = \phi^kx_{t-k} + \epsilon_t + \phi\epsilon_{t-1} + \cdots\phi^{k-1}\epsilon_{t-k+1}\\
+&y_t = \phi^kx_{t-k} + \epsilon_t + \phi\epsilon_{t-1} + \cdots\phi^{k-1}\epsilon_{t-k+1} + v_t \\
+&y_{t-k} = x_{t-k} + \epsilon_{t-k} + v_{t-k} \\
+&Cov(y_t, y_{t-k}) = \phi^kVar(x_{t-k}) = \phi^ks \\
+&Var(y_t) = Var(y_{t-k}) = q \rightarrow Cor(y_t, y_{t-k}) = \phi^ks/q
+\end{aligned}
+$$
+
+#### (d)
+Let we have two conditional distribution of $y_t$ given only $y_{t-1}$ and given $y_{t-1} \cdots y_1$.
+If two distributions are same, $y_t$ is markov
+
+$$
+\begin{aligned}
+&y_t = \phi y_{t-1} + \eta_t \\
+&P(y_t \mid y_{t-1},v,w) \sim N(\phi y_{t-1}, (1+\phi^2)w + v) \\
+&P(y_t \mid y_{t-1},\cdots, y_1,v,w) \sim N(\phi y_{t-1}, (1+\phi^2)w + v) \\
+\end{aligned}
+$$
+
+Because $y_t$ does not change at all by given $y_{t-2} \cdots y_1$ and it means that $y_t$ is Markov.
+By definition of AR(1) process, $y_t = \phi y_{t-1} + \eta_t$ where $\eta_t \perp \eta_k$ for all k $\neq$ t.
+But at (b), we found correlation between $\eta_t, \eta_{t-1}$. Thus $y_t$ is not AR(1) process.
+
+## Exercise 3
+
+#### (a)
+
+When p = 2
+
+$$
+\begin{aligned}
+&A = \begin{bmatrix} 
+1&0 \\ 0 & \phi_2
+\end{bmatrix} \quad and \quad G = \begin{bmatrix}\phi_1 & \phi_2 \\ 1 & 0 \end{bmatrix} \\
+&\rightarrow AG = \begin{bmatrix}\phi_1 & \phi_2 \\ \phi_2 & 0 \end{bmatrix}
+\end{aligned}
+$$
+
+For more general case,
+
+$$
+\begin{aligned}
+&A = \begin{bmatrix} 1 & 0  &0  &\cdots &0 &0\\
+0 & \phi_2 & \phi_3 & \cdots &\phi_p &0 \\
+0 & \phi_3 & \phi_4 & \cdots & 0 & 0 \\
+\vdots & \vdots & \vdots & \ddots &\ddots &0 \\
+0 & \phi_{p-1} & \phi_p & \cdots &\cdots &0 \\
+0 & \phi_p &0  &\cdots &\cdots &0 
+\end{bmatrix}
+ \rightarrow \begin{bmatrix}1 &0 \\ 0 &K\end{bmatrix} \quad where \quad K = \begin{bmatrix}\phi_2 & \phi_3 &\cdots &\cdots &\phi_p \\ \phi_3 &\phi_4 &\cdots &\cdots  &0 \\ \vdots & \vdots & \ddots &\ddots & 0 \\
+ \phi_{p-1} & \phi_p & \cdots & \cdots & 0 \\ \phi_p &0 &\cdots &\cdots & 0\end{bmatrix} \\ \\
+&G  = \begin{bmatrix}J & \phi_p \\I & 0\end{bmatrix} \quad where \quad J = (\phi_1, \phi_2, \cdots, \phi_{0-1}) \\
+&Then \quad AG = \begin{bmatrix} 1 & 0 \\ 0 &K\end{bmatrix} \begin{bmatrix}J & \phi_p \\ I & 0\end{bmatrix} = \begin{bmatrix} J & \phi_p \\ K & 0 \end{bmatrix} = \begin{bmatrix}\phi_1 & \phi_2 &\phi_3 &\cdots & \phi_{p-1} &\phi_p \\ \phi_2 & \phi_3 & \phi_4 &\cdots &\phi_p &0 \\
+\vdots &\vdots &\vdots &\vdots &\vdots &\vdots & \\
+\phi_{p-1} & \phi_p &0 &\cdots&0&0\\ \phi_p &0 &\cdots &\cdots &\cdots &0\end{bmatrix}
+\end{aligned}
+$$
+
+#### (b)
+
+##### i.
+When p = 2
+
+$$
+\begin{aligned}
+&A = \begin{bmatrix} 
+1&0 \\ 0 & \phi_2
+\end{bmatrix} \quad then \quad \mid A \mid  = \phi_2
+\end{aligned}
+$$
+if $\phi_2 \neq 0$then $\mid A \mid \neq 0$
+
+For the general case, 
+
+$$
+\begin{aligned}
+&A = \begin{bmatrix}1 & 0  \\ 0 & K_2\end{bmatrix} \quad where \quad K_2  = \begin{bmatrix} \phi_2 &\cdots &\phi_p \\ \phi_3 &\cdots &0 \\ \vdots &\ddots &0 \\\phi_p &\cdots &0 \end{bmatrix} \\
+&Then \quad \mid A \mid = \mid K_2 \mid \quad and \quad \mid K_2 \mid  = \phi_p \mid K_3\mid \quad where \quad K_3 = \begin{bmatrix} \phi_3 &\cdots &\phi_p \\ \phi_4 &\cdots &0 \\ \vdots &\ddots &0 \\\phi_p &\cdots &0 \end{bmatrix} \\
+&\mid K_3 \mid = \phi_p \mid K_4\mid \cdots \rightarrow \mid A\mid = \phi_p^p  
+\end{aligned}
+$$
+Thus if $\phi_p \neq 0$then $\mid A \mid \neq 0$
+
+##### ii.
+
+We could know that A is symmetric and AG is also symmetric.
+Thus
+
+$$
+\begin{aligned}
+AG = G^TA^T \rightarrow AG = G^T A \rightarrow AGA^{-1} = G^T
+\end{aligned}
+$$
+
+##### iii.
+
+$$
+\begin{aligned}
+AF = \begin{bmatrix} 1&0 &0 &\cdots &0 \\ 0 &\phi_2 &\phi_3 &\cdots &0 \\ \vdots &\vdots &\vdots &\vdots & \vdots \\ 0 &\phi_p &\cdots &\cdots &0\end{bmatrix}\begin{bmatrix}1\\0\\\vdots\\0\end{bmatrix} = \begin{bmatrix}1\\0\\\vdots \\0\end{bmatrix} = F \\
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+&AF = F \rightarrow F = A^{-1}F \rightarrow  F^T = F^T(A^{-1})^T \quad \rightarrow \quad F^T = F^TA^{-1} \\
+&for \; A \; is \; symmetric
+\end{aligned}
+$$
+
+#### (c)
+
+$$
+\begin{aligned}
+&y_t = F^Tx_t \\
+&x_t = Gx_{t-1} +F\epsilon_t  \\
+&\rightarrow z_t =Ax_t = AGx_{t-1} + AF\epsilon_t
+\\ &= AGA^{-1}Ax_{t-1} + AF\epsilon_t \\
+& = AGA^{-1}z_{t-1} + AF\epsilon_t \\
+&= G^Tz_{t-1} + AF\epsilon_t \\
+&= G^Tz_{t-1} + F\epsilon_t
+\end{aligned}
+$$
+
+#### (d)
+
+$$
+\begin{aligned}
+y_t = Fx_t, x_t = Gx_{t-1}+F\epsilon_t \quad and \; also \; y_t = Fz_t, z_t = G^Tz_{t-1}+F\epsilon_t 
+\end{aligned}
+$$
+
+Both representation are state-space representation of $y_t$, AR(p) process.
+It means that state-space representation of process is not unique and $z_t$ is another state vector of $y_t$.
+
+$$
+\begin{aligned}
+z_t = Ax_t = \begin{bmatrix}y_t \\ \phi_2 y_{t-1} + \phi_3 y_{t-2} +\cdots+ \phi_py_{t-p+1}\\ \phi_3y_{t-1} + \phi_4y_{t-2} + \cdots + \phi_py_{t-p+2} \\ \vdots \\\phi_py_{t-1}\end{bmatrix} \quad when \;p=2 \quad \begin{bmatrix} z_t \\ z_{t-1}\end{bmatrix} = \begin{bmatrix} y_t \\ \phi_2y_{t-1}\end{bmatrix}
+\end{aligned}
+$$
+
+By above equations, we can interpret $z_t$ as weighted state vector of $y_t$ whose weights are given by estimated $\phi$.
+This fact make it clear that unknown state underlying $y_t$'s can be estimated with observation $y_t$

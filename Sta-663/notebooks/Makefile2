@@ -1,0 +1,12 @@
+
+CC=g++
+CFLAGS=-Wall -std=c++14
+        
+driver: my_math.o my_stats.o
+	$(CC) $(CFLAGS) my_driver.cpp my_math.o my_stats.o -o my_driver2
+    
+my_math.o: my_math.cpp my_math.hpp
+	$(CC) $(CFLAGS) -c my_math.cpp
+    
+my_stats.o: my_stats.cpp my_stats.hpp
+	$(CC) $(CFLAGS) -c my_stats.cpp

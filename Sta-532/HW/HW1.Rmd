@@ -1,0 +1,251 @@
+---
+title: 'STA 532 Homework1'
+author: "Jae Hyun Lee, jl914"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+---
+
+```{r setup, message=F, warning=F, echo=F}
+library(tidyverse)
+require(magrittr)
+require(plyr)
+ggplot2::theme_set(ggplot2::theme_bw())
+knitr::opts_chunk$set(fig.align = 'center')
+```
+
+# HW1 for STA-532
+
+
+## Exercise 1
+
+Let assume $\mathbb{Y} = \mathbb{R}$
+
+#### (a)
+
+
+$$
+\begin{aligned}
+Pr(Y \in (a,b]) = Pr(a<Y\le b) &= Pr(Y \le b) - Pr(Y \le a) \\
+&= F(b) - F(a)
+\end{aligned}
+$$
+
+#### (b)
+
+
+$$
+\begin{aligned}
+Pr(Y \in (a,b)) = Pr(a<Y<b) &= Pr(Y < b) - Pr(Y \le a) \\
+&= Pr(Y \le b ) - Pr(Y = b) - Pr(Y \le a) \\
+&= F(b) - F(a) - Pr(Y = b)
+\end{aligned}
+$$
+
+#### (c)
+
+
+$$
+\begin{aligned}
+Pr(Y \in [a,b]) = Pr(a \le Y \le b) &= Pr(Y \le b) - Pr(Y < a) \\
+&= Pr(Y \le b ) - (Pr(Y \le a) - Pr(Y = a)) \\
+&= F(b) - F(a) + Pr(Y = a)
+\end{aligned}
+$$
+
+## Exercise 2
+
+#### (a)
+
+$$
+\begin{aligned}
+&y \in (0,1) \rightarrow w = -log(y) \in (0,\infty) \\
+&g(y) = -log(y) \; is \; monotonic \; and \; g^{-1}(w) = e^{-w} \\
+\end{aligned}
+$$
+
+
+$$
+\begin{aligned}
+\rightarrow P_W(w) &= P_Y(g^{-1}(w))\mid\frac{d}{dw}g^{-1}(w)\mid \\
+&= 1 \times e^{-w} = e^{-w} \; where \; w \in (0,\infty) \\
+\\
+&\int e^{-w}dw = 1 \rightarrow valid \; pdf
+\end{aligned}
+$$
+
+#### (b)
+
+$$
+\begin{aligned}
+&y \in \mathbb{R} \rightarrow w = y^{-1} \in \mathbb{R} \\
+&g(y) = 1/y \; is \; monotonic \rightarrow g^{-1}(w) = 1/w
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+\rightarrow P_W(w) &= P_Y(1/w) \mid \frac{d}{dw} \frac{1}{w} \mid \\
+&= 1/(\pi(1+w^{-2})) \times 1/w^{-2} = \frac{1}{\pi(1+w^2)} \\
+\\
+&\int P_W(w)dw = \int P_Y(y)dy = 1
+\end{aligned}
+$$
+
+#### (c)
+
+$$
+\begin{aligned}
+&y \in \mathbb{R} \rightarrow w = e^y \in (0,\infty) \\
+&P_Y(y) = \frac{1}{\sqrt(2\pi)} \\
+&g(y) = e^y \; is \; monotonic \rightarrow g^{-1}(w) = log(w)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+\rightarrow P_W(w) &= P_Y(log(w)) \mid \frac{d}{dw} log(w) \mid \\
+&= \frac{1}{\sqrt(2\pi)} w^{-1} exp\{-\frac{1}{2}(log(w))^2 \}
+\end{aligned}
+$$
+
+#### (d)
+
+$$
+\begin{aligned}
+&y \in \mathbb{R} \rightarrow w = y^2 \in [0,\infty) \\
+&P_Y(y) = \frac{\Gamma((\nu+1)/2)}{\sqrt(\nu\pi) \Gamma(\nu/2)} (1+\frac{y^2}{\nu})^{-(v+1)/2} \\
+&g(y) = y^2 \; is \; not \; monotonic
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+\rightarrow F_W(w) &= Pr(W \le w) \\
+&= Pr(Y^2 \le w) \\
+&= Pr(-\sqrt{w} \le Y \le \sqrt{w} ) \\
+\rightarrow P_W(w)& = [P_Y(\sqrt{w}) + P_Y(\sqrt{-w}))] \times 1/2\sqrt{w} \\
+&= \frac{\Gamma((\nu+1)/2)}{\sqrt(\nu\pi) \Gamma(\nu/2)} (1+\frac{w}{\nu})^{-(v+1)/2} \times w^{-\frac{1}{2}}
+\end{aligned}
+$$
+
+## Exercise 3
+
+$0 = F(-\infty) < F(Y) < F(Y+\lambda) < F(\infty) = 1 \; for \; \lambda>0$
+which means strictly increasing CDF and $F_Y^{-1}$ exists.
+
+#### (a)
+
+$$
+\begin{aligned}
+F_U(u) &= Pr(U \le u) \\
+&= Pr(F_Y(Y) \le u) \\
+&= Pr(Y \le F^{-1}_Y(u)) \\
+&= F_Y(F_Y^{-1}(u)) = u \quad where\; u \in[0,1] \\
+\\
+valid \; check: &\int u du = 1
+\end{aligned}
+$$
+
+#### (b)
+
+$$
+\begin{aligned}
+F_X(x) &= Pr(X \le x) \\
+&= Pr(F^{-1}_Y(U) \le x) \\
+&= Pr(U \le F_Y(x)) \\
+&= F_U(F_Y(x)) = F_Y(x) \\
+\end{aligned}
+$$
+By Thm, X and Y are equivalent in distribution.
+
+#### (c)
+
+```{r}
+Y = qnorm(runif(1000))
+library(ggplot2)
+ggplot() + geom_density(aes(x = Y))
+```
+
+## Exercise 4
+
+Define $Pr(X \in A \mid Y = y)$
+
+$$
+\begin{aligned}
+Pr(X \in A \mid Y = y) &= \frac{P(\{w:X(w) \in A, Y(w) = y\})}{P(\{w:Y(w) = y\})} \\
+&= \frac{P(\{w:X(w) \in A, Y(w) = y\})}{P(\{w:X \in \mathbb{R},Y(w) = y\})} \\
+&= \frac{\int_A P(x,y)dx}{\int_\mathbb{R}P(x,y)dx} \\
+&= \frac{\int_A P(x,y)dx}{P(y)} = \int_A \frac{P(x,y)}{P(y)} dx = \int_A P_{X\mid Y}(x \mid y)dx
+\end{aligned}
+$$
+
+Show that $Pr(X \in A \mid Y = y)P_Y(y)dy = Pr(X\in A)$
+
+$$
+\begin{aligned}
+\int Pr(X \in A \mid Y = y)P_Y(y)dy &= \int \int_A P_{X|Y}(x\mid y)dx P_Y(y)dy \\
+&= \int\int_A P_{X|Y}(x\mid y)P_Y(y)dxdy \\
+&= \int_A\int P_{X|Y}(x\mid y)P_Y(y)dydx \quad (by \; Fubini's \; theorem) \\
+&= \int_A\int \frac{P(x,y)}{P_Y(y)} P_Y(y)dydx \\
+&= \int_A\int P(x,y)dydx \\
+&= \int_A P_X(x)dx = Pr(X \in A)
+\end{aligned}
+$$
+
+Since we integrate(sum) all probability $X\in A$ given Y = y over y,
+It returns the probability that $X \in A$.
+Assume that there are 5 people and a cup of water exists. After 5 minutes, probability that cup is empty is sum of probability that one of people drank that water.
+In mathematical explanation, Let $\mathbb{Y} = \{1,2,\cdots,5\}$ and $P(\{w:Y(w) = i\}) = \frac{1}{5}$.
+
+$$
+\begin{aligned}
+Pr(X \in A) &= P(\{w:X(w) \in A\}) \\
+&=P(\cup_{i=1}^5\{w:X(w)\in A, y(w) = i\}) \\
+&= \sum_{i=1}^5 P(\{w:X(w) \in A, y(w) = i\}) \\
+&= \sum_{i=1}^5 P(\{w:X(w) \in A\})/5 = P(\{w:X(w) \in A\}) \\
+\end{aligned}
+$$
+
+## Exercise 5
+
+$B_{\epsilon} = (y - \epsilon,y]$ and $\lim_{\epsilon \to 0} B_\epsilon = \{y\}$
+
+$$
+\begin{aligned}
+\lim_{\epsilon \to 0} Pr(X \in A \mid Y \in B_\epsilon) &= Pr(X\in A \mid Y = y)\\
+&= \frac{P(X\in A, Y = y)}{P(Y = y)} \\
+&= \frac{P(X \in A, Y = y)}{P_Y(y)} \\
+&= \int_A \frac{P(x,y)}{P_Y(y)} = \int_A P_{X\mid Y}(x\mid y)dx
+\end{aligned}
+$$
+
+## Exercise 6
+
+$$
+\begin{aligned}
+P(x) = b^ax^{a-1}e^{-bx}/\Gamma(a) &\rightarrow \int^{\infty}_0 P(x)dx = \frac{b^a}{\Gamma(a)}\int x^{a-1}e^{-bx}dx = 1 \\
+&\rightarrow \int x^{a-1}e^{-bx}dx = \frac{\Gamma(a)}{b^a} \\
+\\
+P_{Y\mid X}(y\mid x) = x^cy^{c-1}e^{-xy}/\Gamma(c)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+P_Y(y) &= \int P(x,y)dx \\
+&= \int P(y\mid x)P(x)dx \\
+&= \int x^cy^{c-1}e^{-xy}/\Gamma(c) \times b^ax^{a-1}e^{-bx}/\Gamma(a) dx \\
+&= \frac{b^ay^{c-1}}{\Gamma(a)\Gamma(c)} \int x^{a+c-1}e^{-x(b+y)} dx \\
+&= \frac{b^ay^{c-1}}{\Gamma(a)\Gamma(c)} \times \frac{\Gamma(a+c)}{(b+y)^{a+c}} \\
+&= \frac{\Gamma(a+c)}{\Gamma(a)\Gamma(c)} \times (\frac{b}{b+y})^a \times (\frac{y}{b+y})^{c-1} \times \frac{1}{b+y}
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+P_{X\mid Y}(x \mid y) &= \frac{P(x,y)}{P_Y(y)} \\
+&= \frac{P_{Y \mid X}(y \mid x)P(x)}{P_Y(y)} \\
+&= \frac{\frac{1}{\Gamma(a)\Gamma(c)} \times x^{a+c-1}e^{-x(b+y)}}{\frac{\Gamma(a+c)}{\Gamma(a)\Gamma(c)} \times (\frac{b}{b+y})^a \times (\frac{y}{b+y})^{c-1} \times \frac{1}{b+y}} \\
+&= \frac{1}{\Gamma(a+c)} \times \frac{1}{b+y} \times (\frac{bx}{b+y})^a \times (\frac{yx}{b+y})^{c-1} \times e^{-x(b+y)}
+\end{aligned}
+$$

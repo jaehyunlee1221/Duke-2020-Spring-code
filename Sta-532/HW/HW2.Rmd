@@ -1,0 +1,267 @@
+---
+title: 'STA 532 Homework2'
+author: "Jae Hyun Lee, jl914"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+---
+
+```{r setup, message=F, warning=F, echo=F}
+library(tidyverse)
+require(magrittr)
+require(plyr)
+ggplot2::theme_set(ggplot2::theme_bw())
+knitr::opts_chunk$set(fig.align = 'center')
+```
+
+# HW2 for STA-532
+
+## 1.
+
+Let $\sigma^2 = 1/\lambda, \tau^2 = 1/k$.
+Then
+
+$$
+\begin{aligned}
+P(Y \mid \theta) = \sqrt(\frac{\lambda}{2\pi})exp\{-\frac{\lambda}{2}(Y-\theta)^2 \}\\ P(\theta) = \sqrt(\frac{k}{2\pi})exp\{-\frac{k}{2}(\theta-\mu)^2\} 
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+P(Y,\theta) &= P(Y \mid \theta)P(\theta)\\
+&= \frac{\sqrt{\lambda k}}{2\pi}exp\{-\frac{1}{2}(\theta^2(\lambda+k) - 2\theta(\lambda Y + k\mu) + \lambda Y^2 + k\mu^2) \}\\
+&= \frac{\sqrt{\lambda k}}{2\pi}exp\{-\frac{(\lambda+k)}{2}(\theta^2 - 2\theta\frac{\lambda Y+k\mu}{\lambda+k}+\frac{(\lambda Y + k\mu)^2}{(\lambda + k)^2})-\frac{1}{2}(\lambda Y^2 + k\mu^2 - \frac{(\lambda Y + k\mu)^2}{\lambda + k})\} \\
+&= \frac{\sqrt{\lambda k}}{2\pi}exp\{-\frac{(\lambda+k)}{2}(\theta - \frac{\lambda Y + k\mu}{\lambda + k})^2\} \times \\
+&\sqrt{\frac{\lambda k}{2\pi(\lambda +k)}}exp\{-\frac{1}{\lambda +k}(\lambda^2Y^2 + \lambda kY^2 + \lambda k \mu^2 + k^2\mu^2 - \lambda^2Y^2 - 2\lambda kY\mu -k^2\mu^2)\} \\
+&= \frac{\sqrt{\lambda k}}{2\pi}exp\{-\frac{(\lambda +k)}{2}(\theta - \frac{\lambda Y + k\mu}{\lambda + k})^2\} \times
+\sqrt{\frac{\lambda k}{2\pi(\lambda +k)}}exp\{-\frac{\lambda Y}{\lambda +k}(Y-\mu)^2\}
+\end{aligned}
+$$
+
+and 
+
+$$
+\begin{aligned}
+P(Y) = \int P(Y,\theta)d\theta &= \sqrt{\frac{\lambda k}{2\pi(\lambda +k)}}exp\{-\frac{\lambda Y}{\lambda +k}(Y - \mu)^2\}\\ &= \sqrt{\frac{1}{2\pi(\sigma^2 +\tau^2)}}exp\{-\frac{1}{2(\sigma^2+\tau^2)}(Y-\mu)^2\}\\
+P(\theta \mid Y) = P(Y,\theta)/P(Y) &= \sqrt{\frac{\sigma^2 + \tau^2}{2\pi\sigma^2\tau^2}}exp\{-\frac{1}{2}(1/\sigma^2 + 1/\tau^2)^{-1}(\theta - (1/\sigma^2 + 1/\tau^2)^{-1}(\frac{Y}{\sigma^2}+\frac{\mu}{\tau^2}))^2\}
+\end{aligned}
+$$
+
+## 2.
+
+Def. Random variable $Y_1, Y_2, \cdots, Y_n$ are independent 
+if $Pr(Y_1 \in B_1, Y_2 \in B_2, \cdots Y_n \in B_n) = Pr(A_1 \in B_1)\times Pr(A_2 \in B_2) \times \cdots Pr(A_n \in B_n)$. 
+
+--> Let X,Y are independent, then by definition of independence, 
+
+$$
+\begin{aligned}
+&Pr(X \in A, Y \in B) = Pr(X\in B) \times Pr(Y\in B) \\
+&\rightarrow \int_B\int_A P(x,y)dxdy = \int_A P_X(x)dx \int_B P_Y(y)dy \\
+&\rightarrow \frac{d^2}{dxdy} \int_B\int_A P(x,y)dxdy = \frac{d^2}{dxdy}\int_A P_X(x)dx\int_B P_Y(y)dy \\
+&\rightarrow P(x,y) = P_X(x)P_Y(y)\\
+&Thus, \; P_{XY}(x,y) = P_X(x)P_Y(y) 
+\end{aligned}
+$$
+
+<-- Let $P_{XY}(x,y) = P_X(x)P_Y(y)$, then
+
+$$
+\begin{aligned}
+\int_A\int_B P_{XY}(x,y)dydx &= \int_A\int_BP_X(x)P_Y(y)dydx \\
+&= \int_AP_X(x)dx\int_BP_Y(y)dy \\
+\rightarrow Pr(X \in A, Y \in B) &= Pr(X \in A)Pr(Y \in B)
+\end{aligned}
+$$
+
+## 3.
+
+--> Let X and Y are independent, then by definition,
+$Pr(X \in A, Y \in B) = Pr(X \in A)Pr(Y \in B)$
+
+and Conditional distribution of x given y, $Pr(X \in A \mid Y \in B) = \frac{Pr(X \in A, Y \in B)}{Pr(Y \in B)} = \frac{Pr(X \in A)Pr(Y\in B)}{Pr(Y \in B)} = Pr(X\in A)$.
+
+$Pr(X \in A) = \int_A P_x(x)dx, Pr(X\in A \mid Y \in B) = \int_A P_{X \mid Y}(x \mid y)dx$  
+
+$\rightarrow \frac{d}{dx}Pr(X \in A) = \frac{d}{dx} P(X \in A \mid Y \in B)$  
+
+$\rightarrow P_X(x) = P_{X\mid Y}(x\mid y)$  
+
+<-- Let $P_{X \mid Y}(x \mid y) = P_X(x)$
+
+
+$$
+\begin{aligned}
+Pr(X \in A) = \int_A P_X(x) = \int_A P_{X \mid Y}(x \mid y)dx &= \int_A \frac{P(x,y)}{P(y)}dx \\
+&= \frac{\int_A P(x,y)dx}{\int_RP(x,y)dx} \\
+&= \frac{\int_B\int_A P(x,y)dxdy}{\int_B\int_A P(x,y)dxdy}\\
+&= \frac{Pr(X \in A, Y \in B)}{Pr(X\in R, Y\in B)}\\
+&= \frac{Pr(X \in A, Y \in B)}{Pr(Y \in B)} \\
+\rightarrow Pr(X \in A)Pr(Y \in B) = Pr(X \in A, Y\in B)
+\end{aligned}
+$$
+
+which means that X,Y are independent.
+
+## 4.
+
+Let assume that U,V are continous random variables.
+
+For any u $u\in \mathbb{R}$ and $v \in \mathbb{R}$, let define 
+
+$$
+A = \{X : g(X) \le u\} \quad and \quad B = \{Y:h(Y) \le v\}
+$$
+Then the joint CDF of U, and V is
+
+$$
+\begin{aligned}
+F_{U,V}(u,v) &= Pr(U \le u, V \le v) \\
+&= Pr(g(X) \le u, h(Y) \le v) \\
+&= Pr(X \in A, Y\in B) \\
+&= Pr(X\in A)Pr(Y \in B) \quad by \; independence \; of \; X,Y
+\end{aligned}
+$$
+Then, joint pdf of U, and V is 
+
+$$
+\begin{aligned}
+P_{U,V}(u,v) &= \frac{d^2}{dudv}F_{U,V}(U,V) \\
+&= (\frac{d}{du}Pr(X \in A)) \times (\frac{d}{dv}Pr(Y \in B))\\
+&= (\frac{d}{du}Pr(g(X) \le u)) \times (\frac{d}{dv}Pr(h(Y) \le u))\\
+&= (\frac{d}{du}F_U(u)) \times (\frac{d}{dv}F_V(v))) \\
+&= P_U(u)P_V(v)
+\end{aligned}
+$$
+
+By the result of Q2, U,V are independent.
+
+In the case of discrete U and V, let define 
+
+$$
+\begin{aligned}
+A = \{X:g(X) = u\} \quad and \quad B = \{Y:h(Y) = v\}
+\end{aligned}
+$$
+Then joint pdf 
+$$
+\begin{aligned}
+P_{U,V}(u,v) &= Pr(g(X) = u, h(Y) = v)\\
+&= Pr(X \in A,Y \in B)\\
+&= Pr(X \in A)Pr(Y \in B) \\
+&= Pr(U = u)Pr(V = v) \\
+&= P_U(u)P_V(v)
+\end{aligned}
+$$
+
+With same logic, U and V are independent.
+
+## 5. 
+
+$$
+\begin{aligned}
+F_{y_n}(y) = Pr(Y_n \le y) = Pr(Y_1,Y_2, \cdots, Y_n \le y) = \prod_{i=1}^n F_{Y_i}(y) = F_Y(y)^n
+\end{aligned}
+$$
+
+because $Y_1, Y_2, \cdots, Y_n$ are iid.  
+
+$P_{Y_n}(y) = \frac{d}{dy}\prod_{i=1}^n F_Y(y) = nF_Y(y)^{n-1}P_Y(y)$
+
+$$
+\begin{aligned}
+&1 - F_{Y_1}(y) = Pr(Y_1 > y) = Pr(Y_1, Y_2, \cdots, Y_n > y) = \prod_{i=1}^n(1- F_{Y_i}(y)) = (1-F_Y(y))^n \\
+&F_{Y_1}(y) = 1 - (1-F_Y(y))^n \\
+&P_{Y_1}(y) = \frac{d}{dy}F_{Y_1}(y) = n(1-F_Y(y))^{n-1}P_Y(y)
+\end{aligned}
+$$
+
+## 6.
+
+Using result from above question, 
+$P_{Y_1}(y) = n(1-F_Y(y))^{n-1}P_Y(y)$
+
+#### (a)
+
+$$
+\begin{aligned}
+P(y) = \lambda e^{-\lambda y},\; F_Y(y) = 1-e^{\lambda y} \rightarrow P_{Y_1}(y) = ne^{-\lambda(n-1)y}\lambda e^{-\lambda y} = \lambda n e^{-\lambda n y}
+\end{aligned}
+$$
+
+#### (b)
+
+$$
+\begin{aligned}
+P(y) = 1, F_Y(y) = y \rightarrow P_{Y_1}(y) = n(1-y)^{n-1}
+\end{aligned}
+$$
+
+#### (c)
+
+$$
+\begin{aligned}
+&P(y) = 1, F_Y(y) = \sum_{i=1}^y \theta(1-\theta)^{i=1} = 1 - (1-\theta)^y \\
+&1 - F_{Y_1}(y) = (1-\theta)^{ny}\\
+&F_{Y_1}(y) = 1 - (1-\theta)^{ny} \\ 
+&P_{Y_1}(y) = F_{Y_1}(y) - F_{Y_1}(y-1) = (1-\theta)^{n(y-1)}(1-(1-\theta)^n)
+\end{aligned}
+$$
+
+## 7.
+
+#### (a)
+
+Let $\theta = 1/\lambda$, then P(y) = $\theta e^{-\theta y}$
+$F(y) = \int_0^y \theta e^{-\theta \hat{y}}d\hat{y} = 1-e^{-\theta y}$
+$\rightarrow Pr(Y_i \le y) = 1 - e^{\theta y}$
+
+
+#### (b)
+
+$$
+\begin{aligned}
+Y_1 = \frac{S+D}{2} \in (0, \infty)\\
+Y_2 = \frac{S-D}{2} \in (0, \infty)\\
+\rightarrow -S<D<S \quad and \quad S>0 
+\end{aligned}
+$$
+
+```{r}
+x = 0:10
+y_high = 0:10
+y_low = 0:-10
+
+plot(-10:10,-10:10, type = "n")
+lines(x, y_high)
+lines(x, y_low)
+abline(h = 0, v = 0)
+polygon(c(x,rev(x)), c(y_high,rev(y_low)), col = "yellow", border = NA,)
+```
+
+#### (c)
+
+$$
+\begin{aligned}
+&P_{Y_1,Y_2} = (y_1,y_2) = \theta^2e^{-\theta(y_1+y_2)}  \\
+&P_{S,D} = P_{Y_1,Y_2}(\frac{S+D}{2},\frac{S-D}{2})\begin{vmatrix}1/2 & 1/2 \\ 1/2 & -1/2\end{vmatrix} \\
+&= \theta^2e^{-\theta S} \times 1/2 \\
+&P_S(s) = \int_{-S}^S \theta^2e^{-\theta S}/2 dD = S\theta^2e^{-\theta S}\\
+&P(D \mid S) = 1/2S
+\end{aligned}
+$$
+
+#### (d)
+
+$$
+\begin{aligned}
+P(D) = \int_{\mid D \mid}^\infty P(S,D)dS = \int_{\mid D \mid}^\infty \theta^2e^{-\theta S}dS = -\frac{1}{2}\theta e^{-\theta S} \mid^\infty_{\mid D \mid} = \frac{1}{2}\theta e^{-\theta \mid D \mid} 
+\end{aligned}
+$$
+
+```{r}
+data = data.frame(a = c(rexp(10000,1),-rexp(10000,1)))
+ggplot(data = data, aes(x=a)) + geom_density() +
+  labs(title = "plot of double exponential distribution")
+```
+
